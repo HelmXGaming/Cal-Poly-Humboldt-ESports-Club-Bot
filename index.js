@@ -36,10 +36,11 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
   }
 
-  // Club Applicants Role (ID: 1392291571021643796)
+// Club Applicants Role (ID: 1392291571021643796)
   if (addedRoles.has('1392291571021643796')) {
-    const logChannelId = '1367986477119836160';
-    const logChannel = await client.channels.fetch('1367986477119836160');
+    const logChannelId = '1367986477119836160'; // Club Submissions channel
+    const moderatorRoleId = '1075654511386955816'; // Server Moderator role
+    const logChannel = await client.channels.fetch(logChannelId);
 
     try {
       await newMember.send(
@@ -51,14 +52,18 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
       console.log(`📩 Sent Club Applicants DM to ${newMember.user.tag}`);
 
       if (logChannel?.isTextBased()) {
-        await logChannel.send(`📝 ${newMember.user.tag} has been given the **Club Applicants** role.`);
+        await logChannel.send(
+            `📝 <@&${moderatorRoleId}>, ${newMember.user.tag} has been given the **Club Applicants** role and is ready for review.`
+        );
       }
 
     } catch (error) {
       console.error(`⚠️ Could not send Club Applicants DM to ${newMember.user.tag}:`, error.message);
 
       if (logChannel?.isTextBased()) {
-        logChannel.send(`⚠️ Failed to DM ${newMember.user.tag} after assigning **Club Applicants** role: ${error.message}`);
+        await logChannel.send(
+            `⚠️ <@&${moderatorRoleId}>, failed to DM ${newMember.user.tag} after assigning **Club Applicants** role: ${error.message}`
+        );
       }
     }
   }
