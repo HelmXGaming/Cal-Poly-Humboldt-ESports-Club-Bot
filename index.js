@@ -69,4 +69,4 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   }
 });
 
-await client.login(process.env.TOKEN);
+client.login(process.env.TOKEN).catch(console.error);
