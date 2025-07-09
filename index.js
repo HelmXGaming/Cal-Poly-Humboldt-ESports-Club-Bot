@@ -67,6 +67,37 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
       }
     }
   }
+  // Community Member Role (ID: 1392320168398557214)
+  if (addedRoles.has('1392320168398557214')) {
+    const logChannelId = '1367986477119836160'; // Club Submissions channel
+    const moderatorRoleId = '1075654511386955816'; // Server Moderator role
+    const logChannel = await client.channels.fetch(logChannelId);
+
+    try {
+      await newMember.send(
+          `Hey <@${newMember.user.id}>!\n\n` +
+          `We are so excited to have you in the Cal Poly Humboldt Esports Community Club!\n\n` +
+          `Let us know what games you play in the <#1071164473416634379>.`
+      );
+
+      console.log(`📩 Sent Community Member DM to ${newMember.user.tag}`);
+
+      if (logChannel?.isTextBased()) {
+        await logChannel.send(
+            `📝 <@&${moderatorRoleId}>, <@${newMember.user.id}> has been given the **Community Member** role and is ready for review.`
+        );
+      }
+
+    } catch (error) {
+      console.error(`⚠️ Could not send Community Member DM to ${newMember.user.tag}:`, error.message);
+
+      if (logChannel?.isTextBased()) {
+        await logChannel.send(
+            `⚠️ <@&${moderatorRoleId}>, failed to DM ${newMember.user.tag} after assigning **Community Member** role: ${error.message}`
+        );
+      }
+    }
+  }
 });
 
 client.login(process.env.TOKEN).catch(console.error);
