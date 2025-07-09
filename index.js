@@ -1,3 +1,5 @@
+// @ts-check
+
 const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive!'));
@@ -26,7 +28,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
   if (addedRoles.some(role => role.name === 'Community')) {
     try {
       await newMember.send(
-        `👋 Hey <@${newMember.user.id}>, Thanks for verifying! If you're a student at Cal Poly Humboldt and interested in becoming a member at the Esports Club, please fill out our https://discordapp.com/channels/774358478584021022/1367732965685202984 form!`
+          `👋 Hey <@${newMember.user.id}>, Thanks for verifying! If you're a student at Cal Poly Humboldt and interested in becoming a member at the Esports Club, please fill out our https://discordapp.com/channels/774358478584021022/1367732965685202984 form!`
       );
       console.log(`✅ Sent Community DM to ${newMember.user.tag}`);
     } catch (error) {
@@ -34,21 +36,32 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
   }
 
-  // Club Members Role
-  if (addedRoles.some(role => role.name === 'Club Members')) {
+  // Club Applicants Role (ID: 1392291571021643796)
+  if (addedRoles.has('1392291571021643796')) {
+    const logChannelId = '1367986477119836160';
+    const logChannel = await client.channels.fetch('1367986477119836160');
+
     try {
       await newMember.send(
-        `🎉 Woohoo! You're now an official Cal Poly Humboldt Esports Club Member!
-
-If you're interested in joining our amazing administration team, please reach out to any admin in the server. We are always looking for more help!
-
-We're so excited to have you in the club! If you have any questions, feel free to reach out to anyone on our leadership team.`
+          `Hey <@${newMember.user.id}>, Thank you for applying to become a part of the **Cal Poly Humboldt Esports Club**!\n\n` +
+          `To complete your application, please be sure to follow any instructions shared in the server. If you have any questions, reach out to any member of our leadership team.\n\n` +
+          `We're excited to see your interest and can’t wait to learn more about you!`
       );
-      console.log(`✅ Sent Club Members DM to ${newMember.user.tag}`);
+
+      console.log(`📩 Sent Club Applicants DM to ${newMember.user.tag}`);
+
+      if (logChannel?.isTextBased()) {
+        await logChannel.send(`📝 ${newMember.user.tag} has been given the **Club Applicants** role.`);
+      }
+
     } catch (error) {
-      console.error(`⚠️ Could not send Club Members DM to ${newMember.user.tag}:`, error.message);
+      console.error(`⚠️ Could not send Club Applicants DM to ${newMember.user.tag}:`, error.message);
+
+      if (logChannel?.isTextBased()) {
+        logChannel.send(`⚠️ Failed to DM ${newMember.user.tag} after assigning **Club Applicants** role: ${error.message}`);
+      }
     }
   }
 });
 
-client.login(process.env.TOKEN);
+await client.login(process.env.TOKEN);
