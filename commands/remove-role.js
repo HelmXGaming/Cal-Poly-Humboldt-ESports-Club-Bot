@@ -1,49 +1,48 @@
-// commands/remove-role.js
 module.exports = {
     name: 'remove-role',
-    description: 'Remove a role from one or more users',
-    async execute(message, args) {
-        const targetRole = message.mentions.roles.first();
-        if (!targetRole) return message.reply('❌ You must mention a valid role.');
+    description: 'Removes a role from mentioned users or everyone.',
+    async execute(message) {
+        const roleMention = message.mentions.roles.first();
+        const userMentions = message.mentions.members;
 
-        if (targetRole.position >= message.member.roles.highest.position) {
-            return message.reply('❌ You can’t remove a role higher or equal to your top role.');
+        if (!roleMention) {
+            return message.reply('❌ Please mention a valid role to remove.');
         }
 
-        const isEveryone = args.includes('everyone');
-
-        if (isEveryone) {
-            const members = await message.guild.members.fetch();
-            const updatedMembers = [];
-
-            for (const [, member] of members) {
-                if (member.roles.cache.has(targetRole.id) && member.manageable) {
-                    try {
-                        await member.roles.remove(targetRole);
-                        updatedMembers.push(member.user.tag);
-                    } catch (error) {
-                        console.error(`Failed to remove role from ${member.user.tag}:`, error.message);
-                    }
-                }
-            }
-
-            return message.reply(`✅ Removed role **${targetRole.name}** from ${updatedMembers.length} members.`);
+        if (userMentions.size === 0 && !message.content.toLowerCase().includes('everyone')) {
+            return message.reply('❌ Mention at least one user or say "everyone" to remove the role from.');
         }
 
-        const mentionedMembers = [...message.mentions.members.values()].filter(m => m.roles.cache.has(targetRole.id) && !m.user.bot);
-
-        if (mentionedMembers.length === 0) {
-            return message.reply('❌ Mention at least one user to remove the role from.');
+        // Prevent removing roles higher or equal to the invoker’s highest role
+        if (roleMention.position >= message.member.roles.highest.position && message.member.id !== message.guild.ownerId) {
+            return message.reply(`❌ You can't remove the **${roleMention.name}** role. It's higher or equal to your highest role.`);
         }
 
-        for (const member of mentionedMembers) {
+        let targets = [];
+
+        if (message.content.toLowerCase().includes('everyone')) {
+            targets = message.guild.members.cache.filter(member =>
+                !member.user.bot && member.roles.cache.has(roleMention.id)
+            );
+        } else {
+            targets = userMentions.filter(member => member.roles.cache.has(roleMention.id));
+        }
+
+        if (targets.size === 0) {
+            return message.reply('ℹ️ No one currently has that role.');
+        }
+
+        let success = 0, failed = 0;
+
+        for (const member of targets.values()) {
             try {
-                await member.roles.remove(targetRole);
-            } catch (error) {
-                console.error(`Failed to remove role from ${member.user.tag}:`, error.message);
+                await member.roles.remove(roleMention);
+                success++;
+            } catch {
+                failed++;
             }
         }
 
-        return message.reply(`✅ Removed role **${targetRole.name}** from ${mentionedMembers.map(m => m.user.username).join(', ')}`);
+        return message.reply(`✅ Removed role **${roleMention.name}** from ${success} user(s). ${failed ? `❌ Failed on ${failed}.` : ''}`);
     }
 };
