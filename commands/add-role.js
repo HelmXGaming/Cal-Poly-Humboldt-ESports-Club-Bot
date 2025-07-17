@@ -1,43 +1,50 @@
+// commands/add-role.js
 module.exports = {
     name: 'add-role',
-    description: 'Adds a role to mentioned users or everyone',
-    async execute(message) {
-        const args = message.content.split(' ').slice(1);
-        if (args.length < 2) return message.reply('Usage: `!add-role @role @user1 @user2 ...` or `!add-role @role everyone`');
-
+    description: 'Add a role to one or more users',
+    async execute(message, args) {
         const targetRole = message.mentions.roles.first();
         if (!targetRole) return message.reply('❌ You must mention a valid role.');
 
-        if (targetRole.position >= message.member.roles.highest.position && message.guild.ownerId !== message.member.id) {
-            return message.reply(`❌ You can't assign the **${targetRole.name}** role. It's higher or equal to your highest role.`);
+        // Prevent assigning roles higher than the command user's top role
+        if (targetRole.position >= message.member.roles.highest.position) {
+            return message.reply('❌ You can’t assign a role higher or equal to your top role.');
         }
 
-        const mentionedMembers = message.mentions.members;
+        const isEveryone = args.includes('everyone');
 
-        if (args.includes('everyone')) {
+        if (isEveryone) {
             const members = await message.guild.members.fetch();
-            members.forEach(async (member) => {
-                if (!member.user.bot && !member.roles.cache.has(targetRole.id)) {
-                    if (
-                        targetRole.position >= message.member.roles.highest.position &&
-                        message.guild.ownerId !== message.member.id
-                    ) return;
+            const updatedMembers = [];
 
-                    await member.roles.add(targetRole).catch(() => {});
+            for (const [, member] of members) {
+                if (!member.roles.cache.has(targetRole.id) && member.manageable) {
+                    try {
+                        await member.roles.add(targetRole);
+                        updatedMembers.push(member.user.tag);
+                    } catch (error) {
+                        console.error(`Failed to add role to ${member.user.tag}:`, error.message);
+                    }
                 }
-            });
+            }
 
-            return message.reply(`✅ Added role **${targetRole.name}** to all users.`);
+            return message.reply(`✅ Added role **${targetRole.name}** to ${updatedMembers.length} members.`);
         }
 
-        if (mentionedMembers.size < 2) return message.reply('❌ Mention at least one user to add the role to.');
+        const mentionedMembers = [...message.mentions.members.values()].filter(m => !m.roles.cache.has(targetRole.id) && !m.user.bot);
 
-        mentionedMembers.forEach(async (member) => {
-            if (!member.roles.cache.has(targetRole.id)) {
-                await member.roles.add(targetRole).catch(() => {});
+        if (mentionedMembers.length === 0) {
+            return message.reply('❌ Mention at least one user to add the role to.');
+        }
+
+        for (const member of mentionedMembers) {
+            try {
+                await member.roles.add(targetRole);
+            } catch (error) {
+                console.error(`Failed to add role to ${member.user.tag}:`, error.message);
             }
-        });
+        }
 
-        return message.reply(`✅ Added role **${targetRole.name}** to selected members.`);
+        return message.reply(`✅ Added role **${targetRole.name}** to ${mentionedMembers.map(m => m.user.username).join(', ')}`);
     }
 };
