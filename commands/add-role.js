@@ -1,67 +1,43 @@
 module.exports = {
     name: 'add-role',
-    async execute(message, args) {
-        if (!message.member.permissions.has('ManageRoles')) {
-            return message.reply("❌ You don't have permission to manage roles.");
+    description: 'Adds a role to mentioned users or everyone',
+    async execute(message) {
+        const args = message.content.split(' ').slice(1);
+        if (args.length < 2) return message.reply('Usage: `!add-role @role @user1 @user2 ...` or `!add-role @role everyone`');
+
+        const targetRole = message.mentions.roles.first();
+        if (!targetRole) return message.reply('❌ You must mention a valid role.');
+
+        if (targetRole.position >= message.member.roles.highest.position && message.guild.ownerId !== message.member.id) {
+            return message.reply(`❌ You can't assign the **${targetRole.name}** role. It's higher or equal to your highest role.`);
         }
 
-        const roleMention = message.mentions.roles.first();
-        const userMention = message.mentions.members.first();
-        const allMentions = message.mentions.roles.map(r => r.id).concat(message.mentions.members.map(m => m.id));
+        const mentionedMembers = message.mentions.members;
 
-        if (!roleMention) {
-            return message.reply("❌ Please mention a valid role to add.");
-        }
+        if (args.includes('everyone')) {
+            const members = await message.guild.members.fetch();
+            members.forEach(async (member) => {
+                if (!member.user.bot && !member.roles.cache.has(targetRole.id)) {
+                    if (
+                        targetRole.position >= message.member.roles.highest.position &&
+                        message.guild.ownerId !== message.member.id
+                    ) return;
 
-        const targetRole = roleMention;
-        const guild = message.guild;
-
-        // If only 1 mention and it's a role → apply to everyone
-        if (allMentions.length === 1 && !userMention) {
-            try {
-                const members = await guild.members.fetch();
-                members.forEach(member => {
-                    if (!member.user.bot) member.roles.add(targetRole).catch(() => {});
-                });
-
-                message.channel.send(`✅ Added role **${targetRole.name}** to everyone.`);
-            } catch (err) {
-                console.error(err);
-                message.reply("❌ Failed to assign role to everyone.");
-            }
-            return;
-        }
-
-        // If both role and user are mentioned → assign role to that user
-        if (roleMention && userMention) {
-            try {
-                await userMention.roles.add(targetRole);
-                return message.channel.send(`✅ Added role **${targetRole.name}** to ${userMention.user.tag}`);
-            } catch (err) {
-                console.error(err);
-                return message.reply("❌ Failed to assign the role to user.");
-            }
-        }
-
-        // Support: !add-role @TargetRole with @ExistingRole
-        if (args.includes("with") && message.mentions.roles.length === 2) {
-            const existingRole = message.mentions.roles[1];
-
-            try {
-                const members = await guild.members.fetch();
-                const filtered = members.filter(m => m.roles.cache.has(existingRole.id));
-                for (const member of filtered.values()) {
                     await member.roles.add(targetRole).catch(() => {});
                 }
+            });
 
-                message.channel.send(`✅ Added role **${targetRole.name}** to members who already have **${existingRole.name}**.`);
-            } catch (err) {
-                console.error(err);
-                return message.reply("❌ Failed to apply role based on existing role.");
-            }
-            return;
+            return message.reply(`✅ Added role **${targetRole.name}** to all users.`);
         }
 
-        message.reply("❌ Couldn't determine how to apply role. Use `!add-role @role`, `!add-role @role @user`, or `!add-role @role with @role`.");
+        if (mentionedMembers.size < 2) return message.reply('❌ Mention at least one user to add the role to.');
+
+        mentionedMembers.forEach(async (member) => {
+            if (!member.roles.cache.has(targetRole.id)) {
+                await member.roles.add(targetRole).catch(() => {});
+            }
+        });
+
+        return message.reply(`✅ Added role **${targetRole.name}** to selected members.`);
     }
 };
