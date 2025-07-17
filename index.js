@@ -5,20 +5,44 @@ const app = express();
 app.get('/', (req, res) => res.send('Bot is alive!'));
 app.listen(3000, () => console.log('🌐 Uptime server running on port 3000'));
 
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const fs = require('fs');
 require('dotenv').config();
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.DirectMessages
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
   ],
   partials: [Partials.Channel]
 });
 
+client.commands = new Collection();
+
+// Load command files from ./commands
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
+}
+
 client.once('ready', () => {
   console.log(`🤖 Bot logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', message => {
+  if (!message.content.startsWith('!') || message.author.bot) return;
+
+  const args = message.content.slice(1).trim().split(/ +/);
+  const commandName = args.shift().toLowerCase();
+  const command = client.commands.get(commandName);
+
+  if (command) {
+    command.execute(message, args);
+  }
 });
 
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
@@ -36,10 +60,10 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
   }
 
-// Club Applicants Role (ID: 1392291571021643796)
+  // Club Applicants Role (ID: 1392291571021643796)
   if (addedRoles.has('1392291571021643796')) {
-    const logChannelId = '1367986477119836160'; // Club Submissions channel
-    const moderatorRoleId = '1075654511386955816'; // Server Moderator role
+    const logChannelId = '1367986477119836160';
+    const moderatorRoleId = '1075654511386955816';
     const logChannel = await client.channels.fetch(logChannelId);
 
     try {
@@ -59,7 +83,6 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
     } catch (error) {
       console.error(`⚠️ Could not send Club Applicants DM to ${newMember.user.tag}:`, error.message);
-
       if (logChannel?.isTextBased()) {
         await logChannel.send(
             `⚠️ <@&${moderatorRoleId}>, failed to DM ${newMember.user.tag} after assigning **Club Applicants** role: ${error.message}`
@@ -67,10 +90,11 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
       }
     }
   }
+
   // Community Member Role (ID: 1392320168398557214)
   if (addedRoles.has('1392320168398557214')) {
-    const logChannelId = '1367986477119836160'; // Club Submissions channel
-    const moderatorRoleId = '1075654511386955816'; // Server Moderator role
+    const logChannelId = '1367986477119836160';
+    const moderatorRoleId = '1075654511386955816';
     const logChannel = await client.channels.fetch(logChannelId);
 
     try {
