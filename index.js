@@ -48,8 +48,8 @@ client.on('messageCreate', message => {
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
   const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
 
-  // Community Role
-  if (addedRoles.some(role => role.name === 'Community')) {
+  // Community Role (ID: 1274536238166052864)
+  if (addedRoles.has('1274536238166052864')) {
     try {
       await newMember.send(
           `👋 Hey <@${newMember.user.id}>, Thanks for verifying! If you're a student at Cal Poly Humboldt and interested in becoming a member at the Esports Club, please fill out our https://discordapp.com/channels/774358478584021022/1367732965685202984 form!`
