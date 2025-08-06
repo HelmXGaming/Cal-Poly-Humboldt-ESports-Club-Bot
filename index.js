@@ -22,6 +22,19 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// Log utility function
+async function logBotAction(content) {
+  const logChannelId = '1402494319193231371';
+  try {
+    const logChannel = await client.channels.fetch(logChannelId);
+    if (logChannel?.isTextBased()) {
+      await logChannel.send({ content });
+    }
+  } catch (error) {
+    console.error("⚠️ Failed to log bot action:", error.message);
+  }
+}
+
 // Load command files from ./commands
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
@@ -31,6 +44,7 @@ for (const file of commandFiles) {
 
 client.once('ready', () => {
   console.log(`🤖 Bot logged in as ${client.user.tag}`);
+  logBotAction(`✅ Bot restarted and logged in as ${client.user.tag}`);
 });
 
 client.on('messageCreate', message => {
@@ -42,6 +56,7 @@ client.on('messageCreate', message => {
 
   if (command) {
     command.execute(message, args);
+    logBotAction(`📨 ${message.author.tag} ran command: !${commandName} ${args.join(' ')}`);
   }
 });
 
@@ -55,8 +70,10 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
           `👋 Hey <@${newMember.user.id}>, Thanks for verifying! If you're a student at Cal Poly Humboldt and interested in becoming a member at the Esports Club, please fill out our https://discordapp.com/channels/774358478584021022/1367732965685202984 form!`
       );
       console.log(`✅ Sent Community DM to ${newMember.user.tag}`);
+      logBotAction(`📨 Sent Community DM to ${newMember.user.tag}`);
     } catch (error) {
       console.error(`⚠️ Could not send Community DM to ${newMember.user.tag}:`, error.message);
+      logBotAction(`⚠️ Failed to send Community DM to ${newMember.user.tag}: ${error.message}`);
     }
   }
 
@@ -74,6 +91,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
       );
 
       console.log(`📩 Sent Club Applicants DM to ${newMember.user.tag}`);
+      logBotAction(`📩 Sent Club Applicants DM to ${newMember.user.tag}`);
 
       if (logChannel?.isTextBased()) {
         await logChannel.send(
@@ -83,6 +101,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
     } catch (error) {
       console.error(`⚠️ Could not send Club Applicants DM to ${newMember.user.tag}:`, error.message);
+      logBotAction(`⚠️ Failed to send Club Applicants DM to ${newMember.user.tag}: ${error.message}`);
       if (logChannel?.isTextBased()) {
         await logChannel.send(
             `⚠️ <@&${moderatorRoleId}>, failed to DM ${newMember.user.tag} after assigning **Club Applicants** role: ${error.message}`
@@ -105,6 +124,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
       );
 
       console.log(`📩 Sent Community Member DM to ${newMember.user.tag}`);
+      logBotAction(`📩 Sent Community Member DM to ${newMember.user.tag}`);
 
       if (logChannel?.isTextBased()) {
         await logChannel.send(
@@ -114,6 +134,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
     } catch (error) {
       console.error(`⚠️ Could not send Community Member DM to ${newMember.user.tag}:`, error.message);
+      logBotAction(`⚠️ Failed to send Community Member DM to ${newMember.user.tag}: ${error.message}`);
 
       if (logChannel?.isTextBased()) {
         await logChannel.send(
@@ -125,3 +146,4 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 });
 
 client.login(process.env.TOKEN).catch(console.error);
+module.exports.client = client;

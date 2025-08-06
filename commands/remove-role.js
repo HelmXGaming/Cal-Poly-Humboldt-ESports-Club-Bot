@@ -1,3 +1,5 @@
+const { logBotAction } = require('../utils/logger');
+
 module.exports = {
     name: 'remove-role',
     description: 'Removes a role from mentioned users or everyone.',
@@ -14,15 +16,18 @@ module.exports = {
         }
 
         // Prevent removing roles higher or equal to the invoker’s highest role
-        if (roleMention.position >= message.member.roles.highest.position && message.member.id !== message.guild.ownerId) {
+        if (
+            roleMention.position >= message.member.roles.highest.position &&
+            message.member.id !== message.guild.ownerId
+        ) {
             return message.reply(`❌ You can't remove the **${roleMention.name}** role. It's higher or equal to your highest role.`);
         }
 
         let targets = [];
 
         if (message.content.toLowerCase().includes('everyone')) {
-            targets = message.guild.members.cache.filter(member =>
-                !member.user.bot && member.roles.cache.has(roleMention.id)
+            targets = message.guild.members.cache.filter(
+                member => !member.user.bot && member.roles.cache.has(roleMention.id)
             );
         } else {
             targets = userMentions.filter(member => member.roles.cache.has(roleMention.id));
@@ -32,17 +37,26 @@ module.exports = {
             return message.reply('ℹ️ No one currently has that role.');
         }
 
-        let success = 0, failed = 0;
+        let success = 0,
+            failed = 0;
 
         for (const member of targets.values()) {
             try {
                 await member.roles.remove(roleMention);
                 success++;
+                await logBotAction(`✅ ${message.author.tag} removed role **${roleMention.name}** from ${member.user.tag}`);
             } catch {
                 failed++;
+                await logBotAction(`❌ ${message.author.tag} failed to remove role **${roleMention.name}** from ${member.user.tag}`);
             }
         }
 
-        return message.reply(`✅ Removed role **${roleMention.name}** from ${success} user(s). ${failed ? `❌ Failed on ${failed}.` : ''}`);
+        await logBotAction(
+            `📊 ${message.author.tag} attempted to remove role **${roleMention.name}** — Success: ${success}, Failed: ${failed}`
+        );
+
+        return message.reply(
+            `✅ Removed role **${roleMention.name}** from ${success} user(s). ${failed ? `❌ Failed on ${failed}.` : ''}`
+        );
     }
 };
