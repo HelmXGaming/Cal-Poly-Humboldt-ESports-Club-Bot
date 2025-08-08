@@ -86,7 +86,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     try {
       await newMember.send(
           `Hey <@${newMember.user.id}>, Thank you for applying to join the **Cal Poly Humboldt Esports Club**!\n\n` +
-          `To continue the process of your application, a server moderator will reach out to you with further instructions. If you have any questions or have been waiting for 1 to 2 business days, feel free to reach out to any member of our leadership team in <#1150999262717558945>.\n\n` +
+          `To continue the process of your application, a staff member will reach out to you with further instructions. If you have any questions or have been waiting for 1 to 2 business days, feel free to reach out to any member of our leadership team in <#1150999262717558945>.\n\n` +
           `Thanks again for applying — see you at tryouts!`
       );
 
