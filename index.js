@@ -128,7 +128,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
       if (logChannel?.isTextBased()) {
         await logChannel.send(
-            `📝 <@&${moderatorRoleId}>, <@${newMember.user.id}> has been given the **Community Member** role and is ready for review.`
+            `📝 <@&${moderatorRoleId}>, <@${newMember.user.id}> has been given the **Community Member** role.`
         );
       }
 
